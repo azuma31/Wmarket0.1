@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wマーケット</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- ローディング -->
+    <div id="loading" class="loading hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>処理中...</p>
+        </div>
+    </div>
+
+    <!-- メッセージ表示 -->
+    <div id="message" class="message hidden">
+        <p id="message-text"></p>
+    </div>
+
+    <!-- ヘッダー -->
+    <header class="header">
+        <nav class="nav container">
+            <div class="logo">Wマーケット</div>
+            <div class="nav-center">
+                <input type="text" id="search-input" class="search-input" placeholder="商品を検索">
+                <button class="btn search-btn">検索</button>
+            </div>
+            <div id="nav-buttons">
+                <button class="btn btn-outline" onclick="connectWallet()">ウォレット連携</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container">
+        <!-- ウォレット未連携時の表示 -->
+        <div id="wallet-connect" class="card auth-form">
+            <h2>ウォレット連携</h2>
+            <p class="form-helper">商品の出品・購入にはWウォレットとの連携が必要です</p>
+            <button class="btn btn-block" onclick="connectWallet()">Wウォレットと連携する</button>
+        </div>
+
+        <!-- メインコンテンツ（ウォレット連携後に表示） -->
+        <div id="market-content" class="hidden">
+            <!-- タブメニュー -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="products">商品一覧</button>
+                <button class="tab-btn" data-tab="sell">出品する</button>
+                <button class="tab-btn" data-tab="mypage">マイページ</button>
+            </div>
+
+            <!-- 商品一覧 -->
+            <div id="products" class="tab-content active">
+                <div class="product-filters">
+                    <select id="sort-select" class="select">
+                        <option value="new">新着順</option>
+                        <option value="priceAsc">価格が安い順</option>
+                        <option value="priceDesc">価格が高い順</option>
+                    </select>
+                </div>
+                <div id="product-list" class="product-grid">
+                    <!-- 商品カードがここに動的に追加される -->
+                </div>
+            </div>
+
+            <!-- 出品フォーム -->
+            <div id="sell" class="tab-content">
+                <div class="card">
+                    <h2>商品を出品する</h2>
+                    <form id="sell-form" onsubmit="handleSell(event)">
+                        <div class="form-group">
+                            <label for="product-name">商品名</label>
+                            <input type="text" id="product-name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-description">商品説明</label>
+                            <textarea id="product-description" name="description" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-price">価格（W）</label>
+                            <input type="number" id="product-price" name="price" min="1" step="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-image">商品画像</label>
+                            <input type="file" id="product-image" name="image" accept="image/*" required>
+                            <div id="image-preview" class="image-preview"></div>
+                        </div>
+                        <button type="submit" class="btn btn-block">出品する</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- マイページ -->
+            <div id="mypage" class="tab-content">
+                <!-- ユーザー情報 -->
+                <div class="card">
+                    <h2>アカウント情報</h2>
+                    <div class="account-info">
+                        <p>ユーザー名: <span id="user-name"></span></p>
+                        <p>アカウントID: <span id="account-id"></span></p>
+                        <p>残高: <span id="balance"></span> W</p>
+                    </div>
+                </div>
+
+                <!-- 取引履歴 -->
+                <div class="card">
+                    <h2>取引履歴</h2>
+                    <div class="tabs sub-tabs">
+                        <button class="tab-btn active" data-tab="selling">出品中</button>
+                        <button class="tab-btn" data-tab="sold">売却済み</button>
+                        <button class="tab-btn" data-tab="purchased">購入履歴</button>
+                    </div>
+                    <div id="selling" class="tab-content active">
+                        <div class="product-grid" id="selling-list"></div>
+                    </div>
+                    <div id="sold" class="tab-content">
+                        <div class="product-grid" id="sold-list"></div>
+                    </div>
+                    <div id="purchased" class="tab-content">
+                        <div class="product-grid" id="purchased-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品詳細モーダル -->
+        <div id="product-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <div id="product-detail">
+                    <div class="product-image">
+                        <img id="modal-image" src="" alt="商品画像">
+                    </div>
+                    <div class="product-info">
+                        <h2 id="modal-name"></h2>
+                        <p id="modal-description"></p>
+                        <p class="price">価格: <span id="modal-price"></span> W</p>
+                        <p class="seller">出品者: <span id="modal-seller"></span></p>
+                        <button class="btn btn-block" id="purchase-btn">購入する</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ログインモーダル -->
+        <div id="login-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeLoginModal()">&times;</span>
+                <h2>ウォレット連携</h2>
+                <form id="wallet-login-form" onsubmit="handleWalletLogin(event)">
+                    <div class="form-group">
+                        <label for="wallet-username">ユーザー名</label>
+                        <input type="text" id="wallet-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="wallet-password">パスワード</label>
+                        <input type="password" id="wallet-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-block">連携する</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Wマーケット All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // API URLの設定
+        const WALLET_API_URL = 'https://script.google.com/macros/s/AKfycbxeazNtGJnCmD6OEigo7kSeko7Nvnl186vrLV6WBgKw9PohfmvfhFWy2Dqzsbs8TT6_Jw/exec';
+        const MARKET_API_URL = 'https://script.google.com/macros/s/AKfycbxAJjMaF5ymEYXw63RKZtG4IM5OFS5pD95qPM0Di0rrsNsEzFfnBie-teatqZ65bEWDAA/exec';
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
